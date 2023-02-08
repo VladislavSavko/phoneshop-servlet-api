@@ -40,33 +40,43 @@ public class ArrayListProductDao extends EntityDao<Product> implements ProductDa
     }
 
     @Override
-    public List<Product> findProducts(String query, SortField sort, SortOrder order) {
+    public List<Product> findProducts(String query, SortField sort, SortOrder order, boolean lazySearch) {
         lock.readLock().lock();
+        List<Product> foundProducts;
         try {
-            List<Product> foundProducts = entities.stream().
-                    filter(Objects::nonNull).
-                    filter(product -> query == null || query.isEmpty() || containsAnyWordFrom(query, product.getDescription())).
-                    sorted((p1, p2) -> {
-                        if (query == null) {
-                            return 0;
-                        }
-                        int firstProductMatches = numberOfWordsMatch(query, p1.getDescription());
-                        int secondProductMatches = numberOfWordsMatch(query, p2.getDescription());
-                        return secondProductMatches - firstProductMatches;
-                    }).
-                    filter(product -> product.getPrice() != null).
-                    filter(product -> product.getStock() > 0).
-                    collect(Collectors.toList());
-            if (sort != null && order != null) {
-                Comparator<Product> comparator = Comparator.comparing(product ->
-                        chooseSortField((Product) product, sort)
-                );
-                if (SortOrder.ASC == order) {
-                    comparator = comparator.thenComparing(Product::getDescription);
-                } else {
-                    comparator = comparator.thenComparing(Product::getDescription).reversed();
+            if (!lazySearch) {
+                foundProducts = entities.stream().
+                        filter(Objects::nonNull).
+                        filter(product -> query == null || query.isEmpty() || containsAnyWordFrom(query, product.getDescription())).
+                        sorted((p1, p2) -> {
+                            if (query == null) {
+                                return 0;
+                            }
+                            int firstProductMatches = numberOfWordsMatch(query, p1.getDescription());
+                            int secondProductMatches = numberOfWordsMatch(query, p2.getDescription());
+                            return secondProductMatches - firstProductMatches;
+                        }).
+                        filter(product -> product.getPrice() != null).
+                        filter(product -> product.getStock() > 0).
+                        collect(Collectors.toList());
+                if (sort != null && order != null) {
+                    Comparator<Product> comparator = Comparator.comparing(product ->
+                            chooseSortField((Product) product, sort)
+                    );
+                    if (SortOrder.ASC == order) {
+                        comparator = comparator.thenComparing(Product::getDescription);
+                    } else {
+                        comparator = comparator.thenComparing(Product::getDescription).reversed();
+                    }
+                    foundProducts = foundProducts.stream().sorted(comparator).collect(Collectors.toList());
                 }
-                foundProducts = foundProducts.stream().sorted(comparator).collect(Collectors.toList());
+            } else {
+                foundProducts = entities.stream().
+                        filter(Objects::nonNull).
+                        filter(product -> query.equals(product.getDescription())).
+                        filter(product -> product.getPrice() != null).
+                        filter(product -> product.getStock() > 0).
+                        collect(Collectors.toList());
             }
             return foundProducts;
         } finally {

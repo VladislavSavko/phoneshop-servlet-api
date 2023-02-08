@@ -27,7 +27,8 @@ public class ProductListPageServlet extends HttpServlet {
         request.setAttribute("products", productDao.findProducts(
                 request.getParameter("query"),
                 Optional.ofNullable(request.getParameter("sort")).map(SortField::valueOf).orElse(null),
-                Optional.ofNullable(request.getParameter("order")).map(SortOrder::valueOf).orElse(null)));
+                Optional.ofNullable(request.getParameter("order")).map(SortOrder::valueOf).orElse(null),
+                false));
         request.getRequestDispatcher("/WEB-INF/pages/productList.jsp").forward(request, response);
     }
 }

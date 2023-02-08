@@ -10,7 +10,7 @@ import java.util.List;
 public interface ProductDao {
     Product getEntity(Long id, String message) throws ProductNotFoundException;
 
-    List<Product> findProducts(String query, SortField sort, SortOrder order);
+    List<Product> findProducts(String query, SortField sort, SortOrder order, boolean lazySearch);
 
     void save(Product product);
 
